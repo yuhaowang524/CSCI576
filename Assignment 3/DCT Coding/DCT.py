@@ -52,7 +52,7 @@ def binary_reader(number):
 
 
 def dct_transform(block):
-    ret = np.zeros((8, 8))
+    ret = np.zeros((8, 8), dtype=int)
     for i in range(m):
         for j in range(n):
             sum_param = 0
@@ -101,6 +101,7 @@ def zig_zag_printer(block):
 
 def intermediary_notation_writer(array):
     ret = []
+    non_prefix_array = []
     j = 0
     for i in range(1, len(array)):
         # anchor index j to a non-zero integer before consecutive zeros occur
@@ -116,10 +117,12 @@ def intermediary_notation_writer(array):
                     cnt += 1
                 j += 1
             ret.append("<" + str(cnt) + "," + str(len(binary_reader(array[i]))) + ">" + " " + "<" + str(array[i]) + ">")
-    return ret
+            non_prefix_array.append(binary_reader(array[i]))
+    return ret, non_prefix_array
 
 
 def main():
+    binary_stream = "110011010011000101110000101010001010001101000010100110111110011001111111011010100101110111"
     dct_ret = dct_transform(lum_block)
     quan_ret = quantize_dct(dct_ret, k1_block)
     print("Question 1 quantization table output:")
@@ -130,8 +133,13 @@ def main():
     print(zig_zag_ret)
     print("\n")
     print("Question 3 intermediary notation output:")
-    symbol_ret = intermediary_notation_writer(zig_zag_ret)
+    symbol_ret, sec_array = intermediary_notation_writer(zig_zag_ret)
     print(symbol_ret)
+    # print(sec_array)
+    print("\n")
+    print("Question 5 compression ratio:")
+    print("The length of binary stream is: " + str(len(binary_stream)))
+    print("The compression ratio is: " + str(round(8 * 8 * 8 / len(binary_stream), ndigits=2)))
 
 
 if __name__ == "__main__":
