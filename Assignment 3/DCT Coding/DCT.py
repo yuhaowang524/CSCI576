@@ -29,6 +29,28 @@ k1_block = np.matrix([
     [72, 92, 95, 98, 112, 100, 103, 199]])
 
 
+def binary_reader(number):
+    ans = ""
+    flag = True
+    if number < 0:
+        flag = False
+    number = abs(number)
+    while number:
+        ans += str(number & 1)
+        number = number >> 1
+    # generate complement binary code on input number
+    if not flag:
+        str_list = list(ans)
+        for i in range(len(str_list)):
+            if str_list[i] == '1':
+                str_list[i] = '0'
+            else:
+                str_list[i] = '1'
+        ans = ''.join(str_list)
+    ans = ans[::-1]
+    return ans
+
+
 def dct_transform(block):
     ret = np.zeros((8, 8))
     for i in range(m):
@@ -62,17 +84,39 @@ def quantize_dct(dct_block, quan_block):
 
 
 def zig_zag_printer(block):
-    ret = [[] for i in range(m + n - 1)]
+    temp = [[] for i in range(m + n - 1)]
+    ret = []
     for i in range(m):
         for j in range(n):
             idx_sum = i + j
             if idx_sum % 2 == 0:
-                ret[idx_sum].insert(0, block.item((i, j)))
+                temp[idx_sum].insert(0, block.item((i, j)))
             else:
-                ret[idx_sum].append(block.item(i, j))
-    for i in ret:
+                temp[idx_sum].append(block.item(i, j))
+    for i in temp:
         for j in i:
-            print(j, end=" ")
+            ret.append(j)
+    return ret
+
+
+def intermediary_notation_writer(array):
+    ret = []
+    j = 0
+    for i in range(1, len(array)):
+        # anchor index j to a non-zero integer before consecutive zeros occur
+        cnt = 0
+        if array[i] == 0:
+            j = i
+            while array[j] == 0:
+                j -= 1
+        # count consecutive zeros if index i points to a non-zero integer
+        if array[i] != 0:
+            while j < i:
+                if array[j] == 0:
+                    cnt += 1
+                j += 1
+            ret.append("<" + str(cnt) + "," + str(len(binary_reader(array[i]))) + ">" + " " + "<" + str(array[i]) + ">")
+    return ret
 
 
 def main():
@@ -80,8 +124,14 @@ def main():
     quan_ret = quantize_dct(dct_ret, k1_block)
     print("Question 1 quantization table output:")
     print(quan_ret)
+    print("\n")
     print("Question 2 zig-zag output:")
-    zig_zag_printer(quan_ret)
+    zig_zag_ret = zig_zag_printer(quan_ret)
+    print(zig_zag_ret)
+    print("\n")
+    print("Question 3 intermediary notation output:")
+    symbol_ret = intermediary_notation_writer(zig_zag_ret)
+    print(symbol_ret)
 
 
 if __name__ == "__main__":
