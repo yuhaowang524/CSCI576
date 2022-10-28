@@ -19,14 +19,18 @@ lum_block = np.matrix([
 
 # Quantization table for luminance
 k1_block = np.matrix([
-    [16, 11, 10, 16, 124, 140, 151, 161],
-    [12, 12, 14, 19, 126, 158, 160, 155],
-    [14, 13, 16, 24, 140, 157, 169, 156],
-    [14, 17, 22, 29, 151, 187, 180, 162],
-    [18, 22, 37, 56, 168, 109, 103, 177],
-    [24, 35, 55, 64, 181, 104, 113, 192],
+    [16, 11, 10, 16, 24, 40, 51, 61],
+    [12, 12, 14, 19, 26, 58, 60, 55],
+    [14, 13, 16, 24, 40, 57, 69, 56],
+    [14, 17, 22, 29, 51, 87, 80, 62],
+    [18, 22, 37, 56, 68, 109, 103, 77],
+    [24, 35, 55, 64, 81, 104, 113, 92],
     [49, 64, 78, 87, 103, 121, 120, 101],
-    [72, 92, 95, 98, 112, 100, 103, 199]])
+    [72, 92, 95, 98, 112, 100, 103, 99]])
+
+# Dictionary table for luminance AC coefficients
+int_notation_dict = {'<0,5>': '11010', '<0,4>': '1011', '<0,2>': '01', '<0,3>': '100', '<0,1>': '00', '<1,2>': '11011',
+                     '<1,1>': '1100', '<5,1>': '1111010'}
 
 
 def binary_reader(number):
@@ -101,7 +105,8 @@ def zig_zag_printer(block):
 
 def intermediary_notation_writer(array):
     ret = []
-    non_prefix_array = []
+    key_list = []
+    value_list = []
     j = 0
     for i in range(1, len(array)):
         # anchor index j to a non-zero integer before consecutive zeros occur
@@ -116,13 +121,24 @@ def intermediary_notation_writer(array):
                 if array[j] == 0:
                     cnt += 1
                 j += 1
-            ret.append("<" + str(cnt) + "," + str(len(binary_reader(array[i]))) + ">" + " " + "<" + str(array[i]) + ">")
-            non_prefix_array.append(binary_reader(array[i]))
-    return ret, non_prefix_array
+            key = str(cnt) + "," + str(len(binary_reader(array[i])))
+            value = array[i]
+            ret.append("<" + key + ">" + " " + "<" + str(value) + ">")
+            key_list.append("<" + key + ">")
+            value_list.append(value)
+    return ret, key_list, value_list
+
+
+def binary_stream_writer(key_list, value_list):
+    ret = ""
+    for i in range(len(key_list)):
+        binary_code_key = int_notation_dict[key_list[i]]
+        non_prefix_binary = binary_reader(value_list[i])
+        ret += binary_code_key + " " + non_prefix_binary + " "
+    return ret
 
 
 def main():
-    binary_stream = "110011010011000101110000101010001010001101000010100110111110011001111111011010100101110111"
     dct_ret = dct_transform(lum_block)
     quan_ret = quantize_dct(dct_ret, k1_block)
     print("Question 1 quantization table output:")
@@ -133,13 +149,16 @@ def main():
     print(zig_zag_ret)
     print("\n")
     print("Question 3 intermediary notation output:")
-    symbol_ret, sec_array = intermediary_notation_writer(zig_zag_ret)
+    symbol_ret, key_ret, value_ret = intermediary_notation_writer(zig_zag_ret)
     print(symbol_ret)
-    # print(sec_array)
+    print("\n")
+    print("Question 4 binary stream output:")
+    bin_stream = binary_stream_writer(key_ret, value_ret)
+    print(bin_stream)
     print("\n")
     print("Question 5 compression ratio:")
-    print("The length of binary stream is: " + str(len(binary_stream)))
-    print("The compression ratio is: " + str(round(8 * 8 * 8 / len(binary_stream), ndigits=2)))
+    print("The length of binary stream is: " + str(len(bin_stream.replace(" ", "", -1))))
+    print("The compression ratio is: " + str(round(8 * 8 * 8 / len(bin_stream.replace(" ", "", -1)), ndigits=2)))
 
 
 if __name__ == "__main__":
