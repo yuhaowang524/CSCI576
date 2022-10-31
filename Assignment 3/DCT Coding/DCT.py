@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+np.set_printoptions(suppress=True)
 
 m = 8
 n = 8
@@ -56,7 +57,7 @@ def binary_reader(number):
 
 
 def dct_transform(block):
-    ret = np.zeros((8, 8), dtype=int)
+    ret = np.zeros((8, 8))
     for i in range(m):
         for j in range(n):
             sum_param = 0
@@ -75,7 +76,7 @@ def dct_transform(block):
                     sum_param += dct_ij
             val = c_i * c_j * sum_param
             ret.itemset((i, j), val)
-    return ret
+    return ret.round(decimals=2)
 
 
 def quantize_dct(dct_block, quan_block):
@@ -142,6 +143,7 @@ def main():
     dct_ret = dct_transform(lum_block)
     quan_ret = quantize_dct(dct_ret, k1_block)
     print("Question 1 quantization table output:")
+    print(dct_ret)
     print(quan_ret)
     print("\n")
     print("Question 2 zig-zag output:")
@@ -153,7 +155,7 @@ def main():
     print(symbol_ret)
     print("\n")
     print("Question 4 binary stream output:")
-    bin_stream = binary_stream_writer(key_ret, value_ret)
+    bin_stream = binary_stream_writer(key_ret, value_ret) + '1010'
     print(bin_stream)
     print("\n")
     print("Question 5 compression ratio:")
