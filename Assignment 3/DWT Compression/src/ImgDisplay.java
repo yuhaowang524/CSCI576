@@ -10,18 +10,11 @@ import java.io.*;
 
 public class ImgDisplay {
     // input file pixel height and width are set to 512
-    private static int height = 512;
-    private static int width = 512;
-    private static int blockSize = 8;
-    private int[][] redMatrix = new int[height][width];
-    private int[][] greenMatrix = new int[height][width];
-    private int[][] blueMatrix = new int[height][width];
-    private double[][] dwtRedMat = new double[height][width];
-    private double[][] dwtGreenMat = new double[height][width];
-    private double[][] dwtBlueMat = new double[height][width];
-    private int[][] idwtRedMat = new int[height][width];
-    private int[][] idwtGreenMat = new int[height][width];
-    private int[][] idwtBlueMat = new int[height][width];
+    private static final int height = 512;
+    private static final int width = 512;
+    private final int[][] redMatrix = new int[height][width];
+    private final int[][] greenMatrix = new int[height][width];
+    private final int[][] blueMatrix = new int[height][width];
     BufferedImage InputImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
     BufferedImage dwtImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
@@ -47,32 +40,35 @@ public class ImgDisplay {
 
     private void performDWT(DWT dwt, String[] args) {
         int n = Integer.parseInt(args[1]);
+        if (n < -1 || n > 9) {
+            System.out.println("Error: low pass level varies from 0 to 9\nEnter -1 to show progressive decoding");
+            return;
+        }
         int numCoefficient = (int) Math.pow(Math.pow(2, n), 2);
         if (n != -1) {
-            dwtRedMat = dwt.DWTDecompose(redMatrix, numCoefficient);
-            dwtGreenMat = dwt.DWTDecompose(greenMatrix, numCoefficient);
-            dwtBlueMat = dwt.DWTDecompose(blueMatrix, numCoefficient);
+            dwt.dwtRedMat = dwt.DWTDecompose(redMatrix, numCoefficient);
+            dwt.dwtGreenMat = dwt.DWTDecompose(greenMatrix, numCoefficient);
+            dwt.dwtBlueMat = dwt.DWTDecompose(blueMatrix, numCoefficient);
 
-            idwtRedMat = dwt.IDWTCompose(dwtRedMat);
-            idwtGreenMat = dwt.IDWTCompose(dwtGreenMat);
-            idwtBlueMat = dwt.IDWTCompose(dwtBlueMat);
+            dwt.idwtRedMat = dwt.IDWTCompose(dwt.dwtRedMat);
+            dwt.idwtGreenMat = dwt.IDWTCompose(dwt.dwtGreenMat);
+            dwt.idwtBlueMat = dwt.IDWTCompose(dwt.dwtBlueMat);
 
-            //todo: add display function
-            displayImg();
-            displayPanel();
+            displayImg(dwt);
+            displayPanel(n);
         } else {
             int step = 0;
             int maxStep = 9;
 
-            while (step < maxStep) {
+            while (step <= maxStep) {
                 int currNum = (int) Math.pow(Math.pow(2, step), 2);
-                dwtRedMat = dwt.DWTDecompose(redMatrix, currNum);
-                dwtBlueMat = dwt.DWTDecompose(blueMatrix, currNum);
-                dwtGreenMat = dwt.DWTDecompose(greenMatrix, currNum);
+                dwt.dwtRedMat = dwt.DWTDecompose(redMatrix, currNum);
+                dwt.dwtBlueMat = dwt.DWTDecompose(blueMatrix, currNum);
+                dwt.dwtGreenMat = dwt.DWTDecompose(greenMatrix, currNum);
 
-                idwtRedMat = dwt.IDWTCompose(dwtRedMat);
-                idwtGreenMat = dwt.IDWTCompose(dwtGreenMat);
-                idwtBlueMat = dwt.IDWTCompose(dwtBlueMat);
+                dwt.idwtRedMat = dwt.IDWTCompose(dwt.dwtRedMat);
+                dwt.idwtGreenMat = dwt.IDWTCompose(dwt.dwtGreenMat);
+                dwt.idwtBlueMat = dwt.IDWTCompose(dwt.dwtBlueMat);
 
                 try {
                     Thread.sleep(1000);
@@ -80,21 +76,20 @@ public class ImgDisplay {
                     e.printStackTrace();
                 }
 
-                //todo: add display function
-                displayImg();
-                displayPanel();
+                displayImg(dwt);
+                displayPanel(step);
                 step++;
             }
         }
     }
 
 
-    private void displayImg() {
+    private void displayImg(DWT dwt) {
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                int red = idwtRedMat[i][j];
-                int green = idwtGreenMat[i][j];
-                int blue = idwtBlueMat[i][j];
+                int red = dwt.idwtRedMat[i][j];
+                int green = dwt.idwtGreenMat[i][j];
+                int blue = dwt.idwtBlueMat[i][j];
                 int pix = 0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
                 dwtImg.setRGB(j, i, pix);
             }
@@ -102,21 +97,24 @@ public class ImgDisplay {
     }
 
 
-    private void displayPanel() {
+    private void displayPanel(int lowpass) {
         JFrame jFrame = new JFrame();
         GridBagLayout gbg = new GridBagLayout();
         JLabel jLabel1 = new JLabel();
         JLabel jImage = new JLabel();
 
         jFrame.getContentPane().setLayout(gbg);
-        jLabel1.setText("Title");
+        jFrame.setTitle("DWT Rendered Image");
+        jLabel1.setText("Applying " + (int) Math.pow(2, lowpass) + " low pass coefficients in rows and " +
+                (int) Math.pow(2, lowpass) + " low pass coefficients in columns");
         jLabel1.setHorizontalAlignment(SwingConstants.CENTER);
         jImage.setIcon(new ImageIcon(dwtImg));
+        jImage.setHorizontalAlignment(SwingConstants.CENTER);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.CENTER;
-        gbc.weightx = 0.5;
+        gbc.weightx = 1;
         gbc.gridx = 0;
         gbc.gridy = 0;
         jFrame.getContentPane().add(jLabel1, gbc);
@@ -134,10 +132,10 @@ public class ImgDisplay {
     public void showImage(String[] args) {
         DWT dwt = new DWT(height, width);
         try {
-            InputStream is = new FileInputStream(new File(args[0]));
+            InputStream is = new FileInputStream(args[0]);
             byte[] bytes = new byte[(int) new File(args[0]).length()];
             int offset = 0;
-            int numRead = 0;
+            int numRead;
             while (offset < bytes.length
                     && (numRead = is.read(bytes, offset, bytes.length - offset)) >= 0) {
                 offset += numRead;

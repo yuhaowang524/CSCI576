@@ -9,7 +9,13 @@ public class DWT {
     private int height;
     private int width;
     // DWT matrices
-
+    public double[][] dwtRedMat = new double[height][width];
+    public double[][] dwtGreenMat = new double[height][width];
+    public double[][] dwtBlueMat = new double[height][width];
+    //IDWT matrices
+    public int[][] idwtRedMat = new int[height][width];
+    public int[][] idwtGreenMat = new int[height][width];
+    public int[][] idwtBlueMat = new int[height][width];
 
     public DWT(int height, int width) {
         this.height = height;
